@@ -55,7 +55,7 @@ export async function logIn(req, res) {
     if ([identifier, password].some((item) => item == "")) {
       return res
         .status(400)
-        .json(new ApiError(400, "please fill all the neccessary fields"));
+        .json(new ApiResponse(false, "please fill all the neccessary fields"));
     }
 
     const user = await User.findOne({
@@ -67,20 +67,20 @@ export async function logIn(req, res) {
       return res
         .status(400)
         .json(
-          new ApiError(400, "no user found for the given username or email")
+          new ApiResponse(false, "no user found for the given username or email")
         );
     }
 
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
     if (!isPasswordCorrect) {
-      return res.status(400).json(new ApiError(400, "wrong password"));
+      return res.status(400).json(new ApiResponse(false, "wrong password"));
     }
 
     const token = user.generateToken();
 
     if (!token) {
-      return res.status(500).json(new ApiError(500, "couldn't generate token"));
+      return res.status(500).json(new ApiResponse( false,"couldn't generate token"));
     }
 
  
@@ -91,7 +91,7 @@ export async function logIn(req, res) {
       .json(new ApiResponse(true, "user logged in succesfully", user));
   } catch (error) {
     console.log("error while logging user in: ", error);
-    return res.status(500).json(new ApiError(500,false, "couldn't log in user"));
+    return res.status(500).json(new ApiResponse(false, "couldn't log in user"));
   }
 }
 

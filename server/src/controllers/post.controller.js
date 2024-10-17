@@ -2,6 +2,8 @@ import { ApiError, ApiResponse } from "../utils/apiHandler.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { Post } from "../models/post.model.js";
 import { SavedPosts } from "../models/savedPost.model.js";
+import {Like} from '../models/like.model.js';
+
 
 export async function createPost(req, res) {
   try {
@@ -219,72 +221,92 @@ export async function getUserFeed(req, res) {
   try {
     const userId = req.user._id;
 
-    const feed = await Post.aggregate([
-      {
-        $lookup: {
-          from: "users",
-          localField: "owner",
-          foreignField: "_id",
-          as: "userDetails",
-        },
-      },
-      {
-        $match: {
-          $or: [
-            { "userDetails.followers": userId },
-            {
-              $expr: {
-                $in: [
-                  "$tags",
-                  {
-                    $let: {
-                      vars: {
-                        interactedPosts: {
-                          $arrayElemAt: [
-                            {
-                              $lookup: {
-                                from: "posts",
-                                let: { userId: userId },
-                                pipeline: [
-                                  {
-                                    $match: {
-                                      $or: [
-                                        { "likes.likedBy": userId },
-                                        { "comments.commentedBy": userId },
-                                      ],
-                                    },
-                                  },
-                                  { $project: { tags: 1 } },
-                                ],
-                                as: "interactedPosts",
-                              },
-                            },
-                            0,
-                          ],
-                        },
-                      },
-                      in: "$interactedPosts.tags",
-                    },
-                  },
-                ],
-              },
-              "likes.5": { $exists: true },
-            },
-          ],
-        },
-      },
-      {
-        $sort: {
-          "userDetails.followers": -1,
-          tags: -1,
-          likes: -1,
-        },
-      },
-    ]);
+    
+    //get posts based on user following list
+    const followingPosts = await Post.find({owner : {$in  : req.user.following}});
+
+    //based on user interests 
+    const userReleventPosts = await Post.find({tags : {$in : req.user.tags}});
+
+
+    //get posts that user liked 
+    const likedPosts = await Like.find({likedBy : userId},{postId : 1}).populate("postId");
+
+
+    //get posts that are most liked 
+    const mostLikedPosts = await Post.find().sort({likesCount : -1});
+
+    const postMap = new Map();
+
+
+    followingPosts.forEach((post) => {
+        postMap.set(post._id.toString(),post);
+    });
+
+    userReleventPosts.forEach((post) => {
+        postMap.set(post._id.toString(),post);
+    })
+
+    likedPosts.forEach((post) => {
+      postMap.set(post._id.toString(),post);
+    });
+    
+    mostLikedPosts.forEach((post) => {
+      postMap.set(post._id.toString(),post);
+    });
+
+    const combinedFeed = Array.from(postMap.values());
+
+    if (!combinedFeed) {
+      return res.status(500).json(new ApiResponse(false,"some error occured during fetching combined feed"));
+    }
+
+    
+    return res
+    .status(200)
+    .json(new ApiResponse(true, "fetched user's feed succesfully",combinedFeed));
+
   } catch (error) {
     console.log("error while getting user's feed:  ", error);
     return res
       .status(500)
       .json(new ApiResponse(false, "error while getting user's feed"));
+  }
+}
+
+
+
+export async function getExploreFeed(req,res) {
+
+  try {
+
+    const userReleventPosts = await Post.find({tags : {$in : req.user.tags}});
+
+    const posts = await Post.find().sort({likesCount : -1});
+
+    const postMap = new Map();
+
+    userReleventPosts.forEach((post) => {
+        postMap.set(post._id.toString(),post);
+    });
+
+    posts.forEach((post) => {
+      postMap.set(post._id.toString(),post);
+    })
+
+
+    const combindedPost = Array.from(postMap.values());
+
+
+    if (!combindedPost) {
+      return res.status(500).json(new ApiResponse(false,"some error occured during fetching posts"));
+    }
+    
+    return res.status(200).json(new ApiResponse(true,"fetched explore feed succesfully",combindedPost));
+
+    
+  } catch (error) {
+    console.log("error while getting explore field: ",error);
+    return res.status(500).json(new ApiResponse(false,"error while getting explore field"));
   }
 }
