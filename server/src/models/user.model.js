@@ -5,7 +5,8 @@ import jwt from 'jsonwebtoken';
 const userSchema = new Schema({
     username : {
         type : String,
-        required : [true,"username is required"]
+        required : [true,"username is required"],
+        unique: true,
     },
     email : {
         type : String,
@@ -38,8 +39,17 @@ const userSchema = new Schema({
     ],
     avatarPublicId : {
         type : String,
-    }
-});
+    },
+    isPrivate : {
+        type : Boolean,
+        deafult : false
+    },
+    tags : [
+        {
+            type : String
+        }
+    ]
+},{timestamps : true});
 
 
 userSchema.methods.generateToken = function() {

@@ -2,6 +2,7 @@ import { ApiResponse } from "../utils/apiHandler.js";
 import {Like} from '../models/like.model.js';
 import { Post } from "../models/post.model.js";
 import { CommentModel } from "../models/comment.model.js";
+import {NotificationModel} from '../models/notification.model.js';
 
 export async function likePost(req,res) {
     try {
@@ -32,6 +33,13 @@ export async function likePost(req,res) {
 
              post.likesCount++;
             await post.save({validateBeforeSave : false});
+
+            const newNotification = await NotificationModel.create({
+                title : `${req.user.username} liked your post`,
+                description : `your post have been liked ${post.likesCount}`,
+                sender : req.user._id,
+                reciever : post.owner,
+            })
     
             if (!newLike) { 
                 return res.status(500).json(new ApiResponse(false,"couldn't like the post"));

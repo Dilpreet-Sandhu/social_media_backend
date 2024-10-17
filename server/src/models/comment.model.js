@@ -26,7 +26,7 @@ const commentSchema = new Schema({
     likesCount : {
         type : Number,
     }
-});
+},{timestamps : true});
 
 
 export const CommentModel = model("CommentModel",commentSchema);

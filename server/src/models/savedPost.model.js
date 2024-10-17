@@ -12,6 +12,6 @@ const savedPostSchema = new Schema({
             ref :"Post"
         }
     ]
-});
+},{timestamps : true});
 
 export const SavedPosts = model("SavedPosts",savedPostSchema);

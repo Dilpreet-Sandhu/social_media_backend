@@ -26,8 +26,13 @@ const postSchema = new Schema({
     },
     postPublicId : {
         type :String
-    }
-});
+    },
+    tags : [
+        {
+            type : String,
+        }
+    ]
+},{timestamps : true});
 
 
 export const Post = model("Post",postSchema);

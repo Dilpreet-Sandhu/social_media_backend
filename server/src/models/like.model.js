@@ -19,7 +19,7 @@ const likeSchema = new Schema({
         ref : "User",
         required : [true,"this field is required"]
     }
-});
+},{timestamps : true});
 
 
 export const Like = model("Like",likeSchema);

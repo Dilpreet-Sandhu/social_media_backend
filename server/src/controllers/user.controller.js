@@ -1,5 +1,5 @@
 import { ApiError, ApiResponse } from "../utils/apiHandler.js";
-import { uploadToCloudinary } from "../utils/cloudinary.js";
+import { deleteFromCloudinary, uploadToCloudinary } from "../utils/cloudinary.js";
 import { User } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 
@@ -30,6 +30,7 @@ export async function signUp(req, res) {
       following: [],
       blockedUser: [],
       avatarPublicId: avatar.public_id,
+      isPrivate : false
     });
 
     if (!user) {
@@ -314,3 +315,61 @@ export async function getBlockedUsers(req,res) {
   }
 
 }
+
+
+export async function makeAccountPrivate(req,res) {
+  try {
+
+    const {isPrivate} = req.body;
+
+    if (!isPrivate) {
+      return res.status(400).json(new ApiResponse(false,"private flag is required"));
+    }
+
+    const user = await User.findByIdAndUpdate(req.user._id,{
+      isPrivate,
+    });
+
+    return res.status(200).json(new ApiResponse(true,"your profile is private"));
+    
+  } catch (error) {
+    console.log("error while making account private",error);
+    return res.status(400).json(new ApiResponse(false,"error while making account private"));
+  }
+}
+
+export async function editUser(req,res) {
+    try {
+
+      const {username} = req.body;
+
+      const avatarPath = req?.file?.path;
+      let avatar;
+      
+      if (avatar) {
+        avatar = await uploadToCloudinary(avatarPath);
+        await deleteFromCloudinary(req.user.avatarPublicId);
+      }
+      
+      const user = await User.findByIdAndUpdate(req.user._id,{
+        avatar : avatar.url,
+        avatarPublicId : avatar.public_id,
+      });
+      
+
+
+      
+
+
+      if (!user) {
+        return res.status(400).json(new ApiResponse(false,"couldn't update your profile"));
+      }
+
+      return res.status(200).json(new ApiResponse(true,"updated user profile successfully"));
+      
+    } catch (error) {
+      console.log("error while editing profile: ",error);
+    return res.status(500).json(new ApiResponse(false,"error while editing profile"));
+    }
+}
+

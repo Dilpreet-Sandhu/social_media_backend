@@ -28,3 +28,19 @@ export async function uploadToCloudinary(filePath) {
         console.log("error while uploading to cloudinary: ",error);
     }
 }
+
+export async function deleteFromCloudinary(publicId) {
+    try {
+
+        const deletedFile = await cloudinary.uploader.destroy(publicId);
+
+        if (!deletedFile) {
+            throw new Error("couldn't delete the error")
+        }
+
+        
+        
+    } catch (error) {
+        console.log("error while deleting file from cloudinary; ",error);
+    }
+}
