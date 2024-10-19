@@ -44,3 +44,19 @@ export async function deleteFromCloudinary(publicId) {
         console.log("error while deleting file from cloudinary; ",error);
     }
 }
+
+
+export async function uploadMultipleFiles(files) {
+
+    const urls = [];
+    
+    new Promise((resolve,reject) => {
+        files.map(async (file) => {
+            const url = await uploadToCloudinary(file);
+            urls.push(url);
+        })
+        resolve(urls);
+    })
+
+    return urls;
+}

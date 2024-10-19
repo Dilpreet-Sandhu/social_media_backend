@@ -39,7 +39,7 @@ export async function likePost(req,res) {
                 description : `your post have been liked ${post.likesCount}`,
                 sender : req.user._id,
                 reciever : post.owner,
-            })
+            });
     
             if (!newLike) { 
                 return res.status(500).json(new ApiResponse(false,"couldn't like the post"));
@@ -60,7 +60,7 @@ export async function likePost(req,res) {
 export async function likeComment(req,res) {
     try {
 
-        const {commentId} = req.body;
+        const {commentId,postId} = req.body;
 
         if (!commentId) {
             return res.status(400).json(new ApiResponse(false,"no comment id found"));
@@ -70,7 +70,7 @@ export async function likeComment(req,res) {
         const comment = await CommentModel.findById(commentId);
 
         if (like) {
-            await Like.deleteOne({type : "comment",commentId,likedBy:req.user._id});
+            await Like.deleteOne({type : "comment",commentId,likedBy:req.user._id,postId});
             if (comment.likesCount > 0) {
                 comment.likesCount--;
                 await comment.save({validateBeforeSave : false});
@@ -82,6 +82,12 @@ export async function likeComment(req,res) {
                 type : "comment",
                 postId,
                 likedBy : req.user._id,
+            });
+
+           await NotificationModel.create({
+                title  : `${req.user.username} liked your comment`,
+                reciever : comment.commentedBy,
+                sender : req.user._id,
             });
 
              comment.likesCount++;
