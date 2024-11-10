@@ -2,12 +2,12 @@ import { ApiError, ApiResponse } from "../utils/apiHandler.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { Post } from "../models/post.model.js";
 import { SavedPosts } from "../models/savedPost.model.js";
-import {Like} from '../models/like.model.js';
-
+import { Like } from "../models/like.model.js";
+import { CommentModel } from "../models/comment.model.js";
 
 export async function createPost(req, res) {
   try {
-    const { title, description,tags } = req.body;
+    const { title, description, tags,type } = req.body;
 
     const filepath = req?.file?.path;
 
@@ -28,6 +28,7 @@ export async function createPost(req, res) {
       commentCount: 0,
       postPublicId: file.public_id,
       tags,
+      type
     });
 
     if (!post) {
@@ -80,7 +81,7 @@ export async function updatePost(req, res) {
 
 export async function getUserPosts(req, res) {
   try {
-    const userId = req.user._id;
+    const { userId } = req.params;
 
     if (!userId) {
       return res
@@ -104,6 +105,37 @@ export async function getUserPosts(req, res) {
     return res
       .status(500)
       .json(new ApiResponse(false, "couldn't fetch user's posts"));
+  }
+}
+
+export async function getSinglePost(req, res) {
+  try {
+    const { postId } = req.params;
+
+    const post = await Post.findById(postId).populate(
+      "owner",
+      "username avatar"
+    );
+
+    const comments = await CommentModel.find({ type: "post", postId }).populate(
+      "commentedBy",
+      "username avatar"
+    );
+
+    if (!post) {
+      return res.status(400).json(new ApiResponse(false, "no post found"));
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(true, "post fetched succesfully", { post, comments })
+      );
+  } catch (error) {
+    console.log("error while getting post ", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(false, "error while getting post"));
   }
 }
 
@@ -133,8 +165,19 @@ export async function savePost(req, res) {
         .json(new ApiResponse(true, "saved post sucessfully"));
     }
 
-    savedPosts.posts.push(postId);
-    await savedPosts.save({ validateBeforeSave: false });
+    if (savedPosts.posts.includes(postId)) {
+      savedPosts.posts = savedPosts.posts.filter(
+        (id) => id.toString() !== postId.toString()
+      );
+
+      await savedPosts.save({ validateBeforeSave: false });
+      return res
+        .status(200)
+        .json(new ApiResponse(false, "unsaved post successfully"));
+    } else {
+      savedPosts.posts.push(postId);
+      await savedPosts.save({ validateBeforeSave: false });
+    }
 
     return res
       .status(200)
@@ -149,17 +192,9 @@ export async function savePost(req, res) {
 
 export async function getSavedPosts(req, res) {
   try {
-    const userId = req.user._id;
-
-    if (!userId) {
-      return res
-        .status(400)
-        .json(new ApiResponse(false, "you are not logged in"));
-    }
-
-    const savedPosts = await SavedPosts.findOne({ user: userId }).populate(
-      "posts"
-    );
+    const savedPosts = await SavedPosts.findOne({
+      user: req.user._id,
+    }).populate("posts");
 
     if (!savedPosts) {
       return res
@@ -174,6 +209,25 @@ export async function getSavedPosts(req, res) {
       );
   } catch (error) {
     console.log("erro while getting saved posts: ", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(false, "error while getting saved posts"));
+  }
+}
+
+export async function getSavedPostsIds(req, res) {
+  try {
+    const userId = req?.user?._id;
+
+    const savedPosts = await SavedPosts.findOne({ user: userId });
+
+    const savedPostids = savedPosts.posts.map((id) => id);
+
+    return res
+      .status(200)
+      .json(new ApiResponse(true, "fetched saved posts ids ", savedPostids));
+  } catch (error) {
+    console.log("error while getting saved posts", error);
     return res
       .status(500)
       .json(new ApiResponse(false, "error while getting saved posts"));
@@ -221,51 +275,93 @@ export async function getUserFeed(req, res) {
   try {
     const userId = req.user._id;
 
-    
     //get posts based on user following list
-    const followingPosts = await Post.find({owner : {$in  : req.user.following}});
+    const followingPosts = await Post.find({
+      owner: { $in: req.user.following },
+    })
+      .populate("owner", "username avatar")
+      .limit(10);
 
-    //based on user interests 
-    const userReleventPosts = await Post.find({tags : {$in : req.user.tags}});
+    //based on user interests
+    const userReleventPosts = await Post.find({ tags: { $in: req.user.tags } })
+      .populate("onwer", "username avatar")
+      .limit(10);
 
+    //get posts that user liked
+    const likedPosts = await Like.find({ likedBy: userId }, { postId: 1 })
+      .populate({
+        path: "postId",
+        populate: {
+          path: "owner",
+          model: "User",
+        },
+      })
+      .limit(10);
 
-    //get posts that user liked 
-    const likedPosts = await Like.find({likedBy : userId},{postId : 1}).populate("postId");
+    //get posts that are most liked
+    const mostLikedPosts = await Post.find()
+      .sort({ likesCount: -1 })
+      .populate("owner", "username avatar")
+      .limit(10);
 
+ 
+   
 
-    //get posts that are most liked 
-    const mostLikedPosts = await Post.find().sort({likesCount : -1});
+    const formateedLikesPosts = likedPosts.length > 0 && likedPosts.map(({ postId }) => {
+      return {
+        _id: postId._id,
+        commentCount: postId.commentCount,
+        description: postId.description,
+        likesCount: postId.likesCount,
+        owner: postId.owner,
+        postPublicId: postId.postPublicId,
+        tags: postId.tags,
+        title: postId.title,
+        updatedAt: postId.updatedAt,
+        url: postId.url,
+      
+      };
+    });
+
 
     const postMap = new Map();
 
-
     followingPosts.forEach((post) => {
-        postMap.set(post._id.toString(),post);
+      postMap.set(post?._id?.toString(), post);
     });
 
     userReleventPosts.forEach((post) => {
-        postMap.set(post._id.toString(),post);
-    })
-
-    likedPosts.forEach((post) => {
-      postMap.set(post._id.toString(),post);
+      postMap.set(post?._id?.toString(), post);
     });
-    
+
+    formateedLikesPosts.forEach((post) => {
+      postMap.set(post?._id?.toString(), post);
+    });
+
     mostLikedPosts.forEach((post) => {
-      postMap.set(post._id.toString(),post);
+      postMap.set(post?._id?.toString(), post);
     });
 
     const combinedFeed = Array.from(postMap.values());
 
+
+
     if (!combinedFeed) {
-      return res.status(500).json(new ApiResponse(false,"some error occured during fetching combined feed"));
+      return res
+        .status(500)
+        .json(
+          new ApiResponse(
+            false,
+            "some error occured during fetching combined feed"
+          )
+        );
     }
 
-    
     return res
-    .status(200)
-    .json(new ApiResponse(true, "fetched user's feed succesfully",combinedFeed));
-
+      .status(200)
+      .json(
+        new ApiResponse(true, "fetched user's feed succesfully", combinedFeed)
+      );
   } catch (error) {
     console.log("error while getting user's feed:  ", error);
     return res
@@ -274,39 +370,87 @@ export async function getUserFeed(req, res) {
   }
 }
 
-
-
-export async function getExploreFeed(req,res) {
-
+export async function getExploreFeed(req, res) {
   try {
+    const userReleventPosts = await Post.find({ tags: { $in: req.user.tags } });
 
-    const userReleventPosts = await Post.find({tags : {$in : req.user.tags}});
-
-    const posts = await Post.find().sort({likesCount : -1});
+    const posts = await Post.find().sort({ likesCount: -1 });
 
     const postMap = new Map();
 
     userReleventPosts.forEach((post) => {
-        postMap.set(post._id.toString(),post);
+      postMap.set(post._id.toString(), post);
     });
 
     posts.forEach((post) => {
-      postMap.set(post._id.toString(),post);
-    })
-
+      postMap.set(post._id.toString(), post);
+    });
 
     const combindedPost = Array.from(postMap.values());
 
-
     if (!combindedPost) {
-      return res.status(500).json(new ApiResponse(false,"some error occured during fetching posts"));
+      return res
+        .status(500)
+        .json(
+          new ApiResponse(false, "some error occured during fetching posts")
+        );
     }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(true, "fetched explore feed succesfully", combindedPost)
+      );
+  } catch (error) {
+    console.log("error while getting explore field: ", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(false, "error while getting explore field"));
+  }
+}
+
+
+
+export async function getExplorePagePosts(req,res) {
+
+  try {
+
+    const posts = await Post.find({},{url : 1,likesCount : 1,commentCount : 1});
+
+    return res.status(200).json(new ApiResponse(true,'fetched explore page feed succesfully',posts));
     
-    return res.status(200).json(new ApiResponse(true,"fetched explore feed succesfully",combindedPost));
+  } catch (error) {
+    console.log("error while getting posts of explore page: ",error);
+
+    return res.status(500).json(new ApiResponse(false,"error while getting posts of explore page"));
+  }
+}
+
+
+export async function getReels(req,res) {
+  try {
+
+    
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 10;
+    const skip = (page - 1) * limit;
+
+
+    const reels = await Post.find({type : "video"}).skip(skip).limit(limit);
+
+    const totalDocuments = await Post.countDocuments({type : "video"});
+
+
+    return res.status(200).json(new ApiResponse(true,"fetched reels sucesfully",{
+      reels,
+      currentPage : page,
+      totalPages : Math.ceil(totalDocuments / limit),
+    }))
+    
 
     
   } catch (error) {
-    console.log("error while getting explore field: ",error);
-    return res.status(500).json(new ApiResponse(false,"error while getting explore field"));
+    console.log("error while loading reel",error);
+    return res.status(500).json(new ApiResponse(false,"error while getting posts of explore page"));
   }
 }

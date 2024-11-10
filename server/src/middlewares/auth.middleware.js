@@ -7,8 +7,10 @@ export async function verfiyJWT(req,res,next) {
 
         const token = req.cookies?.token || req.header("Authorization")?.replace("Bearer ","");
 
+   
+
         if (!token) {
-            return res.status(400).json(new ApiError(400,false,"no token found"));
+            return res.status(200).json(new ApiError(400,false,"no token found"));
         }
 
         const decodedToken = jwt.verify(token,process.env.TOKEN_SECRET_KEY);

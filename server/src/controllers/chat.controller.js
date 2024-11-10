@@ -18,6 +18,12 @@ export async function createNewChat(req, res) {
         .json(new ApiResponse(false, "please provide other user id"));
     }
 
+    const aleadyExistschat = await Chat.findOne({creator : req.user._id,members :otherUserId,groupChat : false});
+
+    if (aleadyExistschat) {
+      return res.status(200).json(new ApiResponse(true,"this chat is already created",aleadyExistschat))
+    }
+
     const otherUser = await User.findById(otherUserId);
 
     if (otherUser.blockedUsers.includes(req.user._id)) {
@@ -47,7 +53,7 @@ export async function createNewChat(req, res) {
 
     return res
       .status(200)
-      .json(new ApiResponse(true, "created chat succesffully"));
+      .json(new ApiResponse(true, "created chat succesffully",chat));
   } catch (error) {
     console.log("error while creating chat: ", error);
     return res
@@ -58,7 +64,7 @@ export async function createNewChat(req, res) {
 
 export async function createGroupChat(req, res) {
   try {
-    const { name, members } = req.body;
+    const { name, members,avatar } = req.body;
 
     if (members.length < 3) {
       return res
@@ -103,7 +109,7 @@ export async function getMyChats(req, res) {
     );
 
     const transformedChats = chats.map(
-      ({ _id, members, isApproved, groupChat }) => {
+      ({ _id, members, isApproved, groupChat,name }) => {
         const otherMember = getOtherUser(members, userId);
 
         return {
@@ -114,6 +120,7 @@ export async function getMyChats(req, res) {
             }
             return prev;
           }, []),
+          name,
           isApproved,
           groupChat,
           avatar: groupChat
@@ -301,6 +308,14 @@ export async function getChatDetails(req, res) {
       "avatar username"
     );
 
+    chat.members = chat.members.reduce((prev,current) => {
+      if (current._id.toString() !== req.user._id.toString()) {
+        prev.push(current);
+      }
+      return prev;
+    },[])
+    
+    
     if (!chat) {
       return res
         .status(400)

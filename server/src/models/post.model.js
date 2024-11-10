@@ -14,6 +14,10 @@ const postSchema = new Schema({
     likesCount : {
         type : Number,
     },
+    type : {
+        type : String,
+        enum : ["video","image"]
+    },
     commentCount : {
         type :Number
     },

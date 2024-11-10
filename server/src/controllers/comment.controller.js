@@ -43,6 +43,8 @@ export async function getCommentsOnPost(req,res) {
 
         const comment = await CommentModel.find({postId,type:"post"}).populate("commentedBy","username avatar");
 
+        
+
         if (!comment) {
             return res.status(400).json(new ApiResponse(400,"no comments found on the given post"));
         }

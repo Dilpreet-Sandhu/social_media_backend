@@ -10,7 +10,7 @@ import {Chat} from '../models/chat.model.js';
 
 export async function signUp(req, res) {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password ,tags} = req.body;
 
     if ([username, email, password].some((item) => item == "")) {
       return res.json(new ApiError(400, false, "all fields are neccessary"));
@@ -36,6 +36,7 @@ export async function signUp(req, res) {
       blockedUser: [],
       avatarPublicId: avatar?.public_id || "",
       isPrivate: false,
+      tags
     });
 
     if (!user) {
@@ -51,6 +52,31 @@ export async function signUp(req, res) {
     console.log("error while registering user:  ", error);
     return res.status(500).json(new ApiError(500, "couldn't register user"));
   }
+}
+
+export async function checkUsername(req,res) {
+  try {
+
+    const {username} = req.body;
+
+    if (!username) {
+      return res.status(200).json(new ApiResponse(false,"no username detected"));
+    }
+
+    const user = await User.findOne({username});
+
+    if (user) {
+      return res.status(200).json(new ApiResponse(true,"username is already taken"));
+    }
+
+    return res.status(200).json(new ApiResponse(true,"username is available"));
+
+    
+  } catch (error) {
+    console.log("error while checking username: ",error);
+    return res.status(500).json(new ApiResponse(false,"error while checking username"));
+  }
+
 }
 
 export async function logIn(req, res) {
@@ -94,7 +120,7 @@ export async function logIn(req, res) {
 
     return res
       .status(200)
-      .cookie("token", token)
+      .cookie("token", token,{sameSite : "Lax",path : "/",maxAge : 10 * 24 * 60 * 60 * 1000})
       .json(new ApiResponse(true, "user logged in succesfully", user));
   } catch (error) {
     console.log("error while logging user in: ", error);
@@ -112,7 +138,7 @@ export async function logOut(req, res) {
 
     return res
       .status(200)
-      .clearCookie("token")
+      .clearCookie("token",{sameSite : "Lax",httpOnly : true,path : "/"})
       .json(new ApiResponse(true, "you are logged out succesfully"));
   } catch (error) {
     console.log("error while logging user out:  ", error);
@@ -342,7 +368,7 @@ export async function getUserProfile(req, res) {
 
     const user = await User.findById(userId).select(
       "-password -email -blockedUsers -avatarPublicId"
-    );
+    ).populate("followers following","username avatar follower following");
 
     if (!user) {
       return res
@@ -452,7 +478,7 @@ export async function getUserByName(req,res) {
 
     const users = await User.find({
       username : { $regex : name, $options : "i" },
-    },{username : 1,avatar : 1});
+    },{username : 1,avatar : 1,followers : 1}).populate("followers","username ");
 
     if (!users) {
       return res.status(200).json(new ApiResponse(true,"no users found"));

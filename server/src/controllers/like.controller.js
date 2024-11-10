@@ -129,3 +129,22 @@ export async function getAllUsersWhoLikedaPost(req,res) {
     }
 }
 
+export async function getAllLikedPostsId(req,res) {
+
+    try {
+
+        const userId = req.user?._id;
+
+        const likedPosts = await Like.find({likedBy : userId,type : "post"}).populate("postId","_id");
+
+        const likedPostIds = likedPosts.map(({postId}) => postId?._id);
+
+        return res.status(200).json(new ApiResponse(true,"fetched liked posts",likedPostIds));
+        
+    } catch (error) {
+        console.log('error while fetching liked posts id',error);
+
+        return res.status(500).json(new ApiResponse(false,"error while fetching liked posts id"));
+    }
+    
+}
