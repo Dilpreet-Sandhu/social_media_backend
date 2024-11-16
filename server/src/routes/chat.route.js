@@ -4,6 +4,7 @@ import {
   createGroupChat,
   createNewChat,
   deleteGroup,
+  deleteMessages,
   getChatDetails,
   getMessages,
   getMyChats,
@@ -25,7 +26,7 @@ chatRouter.route("/grp/leave").put(leaveGroup);
 chatRouter.route("/get/:chatId").get(getChatDetails);
 chatRouter.route("/grp/n/change").put(renameGroup);
 chatRouter.route("/grp/del").delete(deleteGroup);
-chatRouter.route("/get/m").get(getMessages);
+chatRouter.route("/get/message/:chatId").get(getMessages);
 chatRouter.route("/new/attach").post(
   upload.fields([
     {
@@ -36,3 +37,4 @@ chatRouter.route("/new/attach").post(
   sendAttachments
 );
 chatRouter.route("/c/get").get(getMyChats);
+chatRouter.route("/messages/del").delete(deleteMessages);

@@ -202,7 +202,7 @@ export async function sendFollowRequest(req, res) {
           )
         );
     }
-
+    
 
     otherUser.followers.push(req.user._id);
     await otherUser.save({ validateBeforeSave: false });
@@ -215,6 +215,7 @@ export async function sendFollowRequest(req, res) {
       title : `${req.user.username} has started following you`,
       sender : req.user._id,
       reciever : otherUser._id,
+      type : "follow"
     });
 
     if (!newNotification) {
@@ -491,4 +492,45 @@ export async function getUserByName(req,res) {
   } catch (error) {
     console.log("error while gettting user by name: ",error);
   }
+}
+
+export async function getUserNotification(req,res) {
+
+  try {
+
+    const userId = req?.user?._id;
+
+    const notifications = await NotificationModel.find({reciever : userId}).populate("sender","username avatar");
+
+
+
+
+    return res.status(200).json(new ApiResponse(true,"fetched user's notifications",notifications));
+    
+  } catch (error) {
+    console.log("error while getting user's notification",error);
+  }
+
+}
+
+
+export async function deleteNotif(req,res) {
+
+  try {
+
+    const {notifId} = req.body;
+
+    const notification = await NotificationModel.findByIdAndDelete(notifId);
+
+    if (!notification) {
+      return res.status(400).json(new ApiResponse(false,"couldn't delte notification"));
+    }
+
+    return res.status(200).json(new ApiResponse(true,"notification deleted succesfully"))
+    
+  } catch (error) {
+    console.log("error while deleting notification",error);
+    return res.status(500).json(new ApiResponse(false,"error while deleting notification"));
+  }
+
 }

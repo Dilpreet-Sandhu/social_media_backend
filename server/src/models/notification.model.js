@@ -15,6 +15,10 @@ const notificationSchema = new Schema({
     sender : {
         type : Schema.Types.ObjectId,
         ref : "User"
+    },
+    type : {
+        type : String,
+        enum : ["like","follow"]
     }
 
 },{timestamps  :true});

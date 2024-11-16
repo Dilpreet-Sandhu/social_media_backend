@@ -404,7 +404,7 @@ export async function deleteGroup(req, res) {
 
 export async function getMessages(req, res) {
   try {
-    const { chatId } = req.body;
+    const { chatId } = req.params;
 
     if (!chatId) {
       return res
@@ -412,7 +412,7 @@ export async function getMessages(req, res) {
         .json(new ApiResponse(false, "please provide chat id to get messages"));
     }
 
-    const messages = await Message.find({ chatId }).populate("sender", "name");
+    const messages = await Message.find({ chatId }).populate("sender", "username avatar").sort({createdAt : 1});
 
     return res
       .status(200)
@@ -422,5 +422,18 @@ export async function getMessages(req, res) {
     return res
       .status(500)
       .json(new ApiResponse(false, "error while getting messages"));
+  }
+}
+
+
+export async function deleteMessages(req,res) {
+  try {
+
+    const messages = await Message.deleteMany();
+
+    return res.status(200).json(new ApiResponse(true,"messages delted",messages));
+    
+  } catch (error) {
+    console.log("error ",error);
   }
 }

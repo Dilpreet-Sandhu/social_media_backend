@@ -221,7 +221,7 @@ export async function getSavedPostsIds(req, res) {
 
     const savedPosts = await SavedPosts.findOne({ user: userId });
 
-    const savedPostids = savedPosts.posts.map((id) => id);
+    const savedPostids = savedPosts.posts.length > 0 && savedPosts.posts.map((id) => id);
 
     return res
       .status(200)
@@ -307,7 +307,7 @@ export async function getUserFeed(req, res) {
  
    
 
-    const formateedLikesPosts = likedPosts.length > 0 && likedPosts.map(({ postId }) => {
+    const formateedLikesPosts = likedPosts.length > 0 && likedPosts?.map(({ postId }) => {
       return {
         _id: postId._id,
         commentCount: postId.commentCount,
@@ -326,23 +326,23 @@ export async function getUserFeed(req, res) {
 
     const postMap = new Map();
 
-    followingPosts.forEach((post) => {
+    followingPosts?.forEach((post) => {
       postMap.set(post?._id?.toString(), post);
     });
 
-    userReleventPosts.forEach((post) => {
+    userReleventPosts?.forEach((post) => {
       postMap.set(post?._id?.toString(), post);
     });
 
-    formateedLikesPosts.forEach((post) => {
+    formateedLikesPosts.length > 0 && formateedLikesPosts?.forEach((post) => {
       postMap.set(post?._id?.toString(), post);
     });
 
-    mostLikedPosts.forEach((post) => {
+    mostLikedPosts?.forEach((post) => {
       postMap.set(post?._id?.toString(), post);
     });
 
-    const combinedFeed = Array.from(postMap.values());
+    const combinedFeed = Array.from(postMap?.values());
 
 
 
@@ -431,8 +431,8 @@ export async function getReels(req,res) {
   try {
 
     
-    const page = req.query.page || 1;
-    const limit = req.query.limit || 10;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
 

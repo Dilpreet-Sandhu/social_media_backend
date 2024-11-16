@@ -33,3 +33,34 @@ export async function verfiyJWT(req,res,next) {
         throw new Error(error);
     }
 }
+
+
+export const verifySocket = async (err,socket,next) => {
+
+    try {
+
+        const authToken = socket?.request?.cookies?.token;
+
+        if (!authToken) {
+            throw new Error("no token found");
+        }
+
+        const decodedToken = jwt.verify(authToken,process.env.TOKEN_SECRET_KEY);
+
+
+        const user = await User.findById(decodedToken?._id).select("-password");
+
+        if (!user) {
+            throw new Error("no user found");
+        }
+
+
+        socket.user = user;
+
+        next();
+        
+    } catch (error) {
+        console.log("error while verifying socket",error);
+    }
+
+}

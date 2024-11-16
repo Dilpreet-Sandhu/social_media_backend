@@ -39,6 +39,7 @@ export async function likePost(req,res) {
                 description : `your post have been liked ${post.likesCount}`,
                 sender : req.user._id,
                 reciever : post.owner,
+                type : "like"
             });
     
             if (!newLike) { 
@@ -88,6 +89,7 @@ export async function likeComment(req,res) {
                 title  : `${req.user.username} liked your comment`,
                 reciever : comment.commentedBy,
                 sender : req.user._id,
+                type : "like"
             });
 
              comment.likesCount++;

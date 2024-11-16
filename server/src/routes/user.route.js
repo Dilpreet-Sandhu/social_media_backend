@@ -2,10 +2,12 @@ import { Router } from "express";
 import { upload } from "../middlewares/multer.js";
 import {
   blockUser,
+  deleteNotif,
   getBlockedUsers,
   getMyProfile,
   getUserByName,
   getUserFollowingAndFollowerList,
+  getUserNotification,
   getUserProfile,
   logIn,
   logOut,
@@ -32,3 +34,5 @@ userRouter
   .get(verfiyJWT, getUserFollowingAndFollowerList);
 userRouter.route("/block").put(verfiyJWT, blockUser);
 userRouter.route("/get/n/users").get(verfiyJWT,getUserByName);
+userRouter.route("/get/user/notifs").get(verfiyJWT,getUserNotification);
+userRouter.route("/del/notif").delete(verfiyJWT,deleteNotif);
