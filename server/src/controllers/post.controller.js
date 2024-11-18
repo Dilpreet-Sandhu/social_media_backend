@@ -436,7 +436,7 @@ export async function getReels(req,res) {
     const skip = (page - 1) * limit;
 
 
-    const reels = await Post.find({type : "video"}).skip(skip).limit(limit);
+    const reels = await Post.find({type : "video"}).populate("owner","username avatar").skip(skip).limit(limit);
 
     const totalDocuments = await Post.countDocuments({type : "video"});
 
