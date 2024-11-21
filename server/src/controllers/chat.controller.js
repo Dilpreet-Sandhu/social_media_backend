@@ -7,6 +7,8 @@ import {
   uploadToCloudinary,
 } from "../utils/cloudinary.js";
 import { Message } from "../models/message.model.js";
+import {emitEvent} from "../socket/socket.js";
+import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from "../constants/constants.js";
 
 export async function createNewChat(req, res) {
   try {
@@ -281,11 +283,27 @@ export async function sendAttachments(req, res) {
       attachments: uploadedUrls,
     });
 
+
+    const messageForSocket = {
+      content : "",
+      sender : {
+        _id : req.user?._id,
+        avatar : req.user?.avatar,
+      },
+      chatId,
+      attachments : message.attachments
+    }
+
+
     if (!message) {
       return res
         .status(500)
         .json(new ApiResponse(false, "couldn't send messsage"));
     }
+    const chat = await Chat.findById(chatId,{members : 1});
+
+    emitEvent(req,NEW_MESSAGE,chat.members,{chatId,message : messageForSocket});
+    emitEvent(req,NEW_MESSAGE_ALERT,chat.members,{chatId});
 
     return res
       .status(200)

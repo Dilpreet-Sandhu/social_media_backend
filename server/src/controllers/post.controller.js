@@ -27,7 +27,7 @@ export async function createPost(req, res) {
       likesCount: 0,
       commentCount: 0,
       postPublicId: file.public_id,
-      tags,
+      tags : JSON.parse(tags),
       type
     });
 

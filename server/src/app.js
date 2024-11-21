@@ -39,13 +39,14 @@ import { verifySocket } from './middlewares/auth.middleware.js';
 import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from './constants/constants.js';
 import {  getMySocket, getSocket } from './utils/helper.js';
 import { Message } from './models/message.model.js';
+import { storyRouter } from './routes/story.route.js';
 
 app.use("/api/users",userRouter);
 app.use("/api/post",postRouter);
 app.use("/api/like",likeRouter);
 app.use("/api/comment",commentRouter);
 app.use("/api/chat",chatRouter);
-
+app.use("/api/story",storyRouter);
 
 
 
@@ -77,8 +78,7 @@ io.on("connection",(socket) => {
 
     socket.on(NEW_MESSAGE,async ({chatId,members,message}) => {
 
-        
-
+ 
         const messageForRealTime = {
             _id : crypto.randomUUID(),
             content : message,
@@ -112,6 +112,11 @@ io.on("connection",(socket) => {
         io.to(userSockets).except([mySocket]).emit(NEW_MESSAGE_ALERT,{chatId});
 
         await Message.create(messageForDb);
+
+
+        socket.on("disconnect",(io) => {
+            console.log(io);
+        })
 
     })
 

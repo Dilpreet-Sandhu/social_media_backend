@@ -1,4 +1,4 @@
-import {getSocket} from '../utils/helper';
+import {getSocket} from '../utils/helper.js';
 export const emitEvent = (req,event,users,data) => {
 
     const io = req.app.get("io");

@@ -22,7 +22,7 @@ export const userRouter = Router();
 
 userRouter.route("/sign-up").post(upload.single("avatar"), signUp);
 userRouter.route("/sign-in").post(logIn);
-userRouter.route("/logout").get(verfiyJWT, logOut);
+userRouter.route("/logout").put(verfiyJWT, logOut);
 userRouter.route("/p/get").get(verfiyJWT, getMyProfile);
 userRouter.route("/follow").put(verfiyJWT, sendFollowRequest);
 userRouter.route("/blocked").get(verfiyJWT, getBlockedUsers);
