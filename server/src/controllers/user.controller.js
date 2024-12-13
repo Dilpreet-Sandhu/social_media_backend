@@ -120,7 +120,7 @@ export async function logIn(req, res) {
 
     return res
       .status(200)
-      .cookie("token", token,{sameSite : "Lax",path : "/",maxAge : 10 * 24 * 60 * 60 * 1000})
+      .cookie("token", token,{sameSite : "none",path : "/",maxAge : 10 * 24 * 60 * 60 * 1000,httpOnly : true,secure : true})
       .json(new ApiResponse(true, "user logged in succesfully", user));
   } catch (error) {
     console.log("error while logging user in: ", error);
@@ -138,7 +138,7 @@ export async function logOut(req, res) {
 
     return res
       .status(200)
-      .clearCookie("token",{sameSite : "Lax",httpOnly : true,path : "/"})
+      .clearCookie("token")
       .json(new ApiResponse(true, "you are logged out succesfully"));
   } catch (error) {
     console.log("error while logging user out:  ", error);
