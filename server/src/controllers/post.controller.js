@@ -221,7 +221,12 @@ export async function getSavedPostsIds(req, res) {
 
     const savedPosts = await SavedPosts.findOne({ user: userId });
 
-    const savedPostids = savedPosts.posts.length > 0 && savedPosts.posts.map((id) => id);
+    const savedPostids = savedPosts?.posts?.length > 0 && savedPosts?.posts.map((id) => id);
+
+
+    if (savedPostids.length < 0) {
+      return res.status(400).json(new ApiResponse(true,"no saved ids"))
+    }
 
     return res
       .status(200)

@@ -25,8 +25,14 @@ const storySchema = new Schema({
         default : Date.now(),
         expires : "24h"
     },
-    
-});
+    duration : {
+        type : Number,
+    },
+    type : {
+        type : String,
+        enum : ["video","image"]
+    }
+},{timestamps : true});
 
 
 export const Story = model("Story",storySchema);

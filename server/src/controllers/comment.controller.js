@@ -11,7 +11,7 @@ export async function createComment(req,res) {
             return res.status(400).json(new ApiResponse(false,"content  is required"));
         }
 
-        const comment = await CommentModel.create({
+        const commentForDb = await CommentModel.create({
             content,
             postId,
             type,
@@ -19,11 +19,24 @@ export async function createComment(req,res) {
             commentedBy : req.user._id,
         });
 
+        const comment = {
+            content,
+            postId,
+            type,
+            commentId,
+            commentedBy : {
+                _id : req?.user?._id,
+                username : req?.user?.username,
+                avatar : req?.user?.avatar
+            },
+        }
+
+
         if (!comment) {
             return res.status(400).json(new ApiResponse(false,"couldn't create comment"));
         }
 
-        return res.status(200).json(new ApiResponse(true,"commented sucesfully"));
+        return res.status(200).json(new ApiResponse(true,"commented sucesfully",comment));
         
     } catch (error) {
         console.log("error while creating comment: ",error);
