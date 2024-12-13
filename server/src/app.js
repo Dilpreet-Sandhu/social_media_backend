@@ -6,11 +6,13 @@ import {createServer} from 'node:http';
 import {Server} from 'socket.io';
 
 
+
+
 export const app = express();
 export const server = createServer(app);
 export const io = new Server(server,{
     cors : {
-        origin : ["http://localhost:3000","http://localhost:5173"],
+        origin : process.env.FRONTEND_URL,
         credentials : true
     },
     pingInterval : 10000,
@@ -23,7 +25,7 @@ app.set("io",io);
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin : ["http://localhost:3000","http://localhost:5173"],
+    origin : process.env.FRONTEND_URL,
     credentials : true
 }));
 
