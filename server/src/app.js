@@ -12,7 +12,7 @@ export const app = express();
 export const server = createServer(app);
 export const io = new Server(server,{
     cors : {
-        origin : process.env.FRONTEND_URL,
+        origin : ["https://social-media-new-frontend.vercel.app"],
         credentials : true
     },
     pingInterval : 10000,
@@ -25,7 +25,7 @@ app.set("io",io);
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin : process.env.FRONTEND_URL,
+    origin : [process.env.FRONTEND_URL || "https://social-media-new-frontend.vercel.app"],
     credentials : true
 }));
 
